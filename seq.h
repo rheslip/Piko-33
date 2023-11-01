@@ -31,6 +31,7 @@ struct sequencer {
   int16_t index;    // index of step we are on
   int16_t divider;   // clock rate divider - lookup via table
   int16_t clockticks;   //  clock counter
+  bool enabled; // true when playing
 };
 
 // notes are stored as offsets from the root 
@@ -41,6 +42,7 @@ sequencer seq[NTRACKS] = {
   DEFAULT_SEQ_STEPS-1,   // step index
   DEFAULT_DIVIDER,  // clock divider
   24,       // 24 ppqn clock
+  true,   // track enabled
 
 
   60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60, // initial notes - if sample is C3 pitch will be correct
@@ -49,6 +51,7 @@ sequencer seq[NTRACKS] = {
   DEFAULT_SEQ_STEPS-1,   // step index
   DEFAULT_DIVIDER,  // clock divider
   24,       // 24 ppqn clock
+  true,   // track enabled
 
    60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60, // initial notes - if sample is C3 pitch will be correct
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // initial velocities
@@ -56,6 +59,7 @@ sequencer seq[NTRACKS] = {
   DEFAULT_SEQ_STEPS-1,   // step index
   DEFAULT_DIVIDER,  // clock divider
   24,       // 24 ppqn clock
+  true,   // track enabled
 
   60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60, // initial notes - if sample is C3 pitch will be correct
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // initial velocities
@@ -63,6 +67,7 @@ sequencer seq[NTRACKS] = {
   DEFAULT_SEQ_STEPS-1,   // step index
   DEFAULT_DIVIDER,  // clock divider
   24,       // 24 ppqn clock
+  true,   // track enabled
 
   60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60, // initial notes - if sample is C3 pitch will be correct
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // initial velocities
@@ -70,6 +75,7 @@ sequencer seq[NTRACKS] = {
   DEFAULT_SEQ_STEPS-1,   // step index
   DEFAULT_DIVIDER,  // clock divider
   24,       // 24 ppqn clock
+  true,   // track enabled
 
   60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60, // initial notes - if sample is C3 pitch will be correct
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // initial velocities
@@ -77,6 +83,7 @@ sequencer seq[NTRACKS] = {
   DEFAULT_SEQ_STEPS-1,   // step index
   DEFAULT_DIVIDER,  // clock divider
   24,       // 24 ppqn clock
+  true,   // track enabled
 
   60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60, // initial notes - if sample is C3 pitch will be correct
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // initial velocities
@@ -84,6 +91,7 @@ sequencer seq[NTRACKS] = {
   DEFAULT_SEQ_STEPS-1,   // step index
   DEFAULT_DIVIDER,  // clock divider
   24,       // 24 ppqn clock
+  true,   // track enabled
 
   60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60, // initial notes - if sample is C3 pitch will be correct
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // initial velocities
@@ -91,6 +99,7 @@ sequencer seq[NTRACKS] = {
   DEFAULT_SEQ_STEPS-1,   // step index
   DEFAULT_DIVIDER,  // clock divider
   24,       // 24 ppqn clock
+  true,   // track enabled
 };
 
 // clock all the sequencers
@@ -104,7 +113,7 @@ void clocktick (long clockperiod) {
       seq[track].clockticks = seq[track].divider; // reset the clock counter
       ++seq[track].index;
       if ((seq[track].index) >= DEFAULT_SEQ_STEPS) seq[track].index=0; // restart the sequence 
-      if (seq[track].velocity[seq[track].index] > 0) { // velocity > 0 is a note on
+      if (seq[track].enabled && (seq[track].velocity[seq[track].index] > 0)) { // velocity > 0 is a note on
         if (random(0,122) < seq[track].probability[seq[track].index]) { // probability threshold for 100% is a little lower - allows for a bit of slop in the pot
           voice[track].level=seq[track].velocity[seq[track].index]; // set the volume level
       // *** should probably do some sanity checks here

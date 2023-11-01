@@ -26,11 +26,6 @@
 //
 // 
 // sample player inspired by Jan Ostman's ESP8266 drum machine http://janostman.wordpress.com
-// completely rewritten for the Motivation Radio Eurorack module
-// plays samples in response to gate/trigger inputs and MIDI note on messages
-// will play any 22khz sample file converted to a header file in the appropriate format
-// Feb 3/19 - initial version
-// Feb 11/19 - sped up encoder/trigger ISR so it will catch 1ms pulses from Grids
 // Jan 2023 - ported code to Pi Pico so I can use it on a 16mb flash version
 // oct 2023 - ported to Pikocore Hardware and converted to a simple rhythm box
 // oct 2023 - turned it into a sample sequencer for the Pikocore hardware
@@ -46,7 +41,8 @@
 #include <PWMAudio.h>
 #include "io.h"
 
-//#define MONITOR_CPU  // define to monitor Core 2 CPU usage on pin CPU_USE
+//#define MONITOR_CPU1  // define to monitor Core 2 CPU usage on pin CPU_USE
+#define MONITOR_MAIN_LOOP // pulse CPU_USE pin every time we go thru the main loop 
 
 #define SAMPLERATE 22050
 //#define SAMPLERATE 44100 // VCC-GND 16mb flash boards won't overclock fast enough for 44khz ?
@@ -212,8 +208,8 @@ uint16_t pitchtable[25]= {
 // put your 22khz or 44khz PCM wav files in a sample subdirectory with a copy of the utility, run the utility and it will generate all the required header files
 // wave2header creates a header file containing the signed PCM values for each sample - note that it may change the name of the file if required to make it "c friendly"
 // wave2header also creates sampledefs.h which is an array of structures containing information about each sample file 
-// the samples are arranged in alphabetical order to facilitate grouping samples by name - you can manually edit this file to change the order of the samples as needed
-// sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote it for another project
+// the samples are arranged in alphabetical order to facilitate grouping samples by name, or you can edit this file to change the order of the samples
+// sampledefs.h contains other information not used by this program e.g. the name of the sample file - I wrote wave2header for another project
 // wave2header also creates "samples.h" which #includes all the generated header files
 
 
@@ -347,11 +343,19 @@ void toggle_step(int track,int step) {
 }
 
 #define DISPLAY_TIME 2000 // time in ms to display numbers on LEDS
+#define FASTBLINK_TIME 75 // blink time
 #define DISPLAY_TIME_SHORT 500
+#define NOBLINKS 0
+#define NUMFASTBLINKS 6
+int16_t blinkcount,pattern;
 int32_t display_timer;
 
 // show a number in binary on the LEDs 
-void display_value(int16_t value, int32_t time){
+void display_value(int16_t value, int32_t time, int16_t blinks){
+  if (blinks >0 ) {
+    pattern=value;
+    blinkcount=blinks;
+  }
   for (int i=LED7; i>=LED0;--i) { // can loop this way because port assignments are sequential
     digitalWrite(i,value&1);
     value=value>>1;
@@ -359,15 +363,6 @@ void display_value(int16_t value, int32_t time){
   display_timer=millis()+time;
 }
 
-// show steps that are playing on track
-void display_active_steps(int track) {
-  int16_t volmap=0;
-  for (int i=0;i<7;++i){
-    if (seq[track].velocity[i + FN2nd*8] >0) volmap |=1;
-    volmap<<=1;
-  }
-  display_value(volmap,DISPLAY_TIME);
-}
 
 // main core setup
 void setup() {      
@@ -377,7 +372,7 @@ void setup() {
 // Serial.print("Number of Samples ");
 // Serial.println(NUM_SAMPLES);      
 
-#ifdef MONITOR_CPU
+#if defined (MONITOR_CPU1) || defined (MONITOR_MAIN_LOOP)
   pinMode(CPU_USE, OUTPUT); // for monitoring CPU usage
 #endif
 
@@ -422,7 +417,7 @@ void setup() {
   for (int i=0; i< NUM_VOICES; ++i) { // silence all voices by setting sampleindex to last sample
     voice[i].sampleindex=sample[voice[i].sample].samplesize<<12; // sampleindex is a 20:12 fixed point number
   } 
-  display_value(NUM_SAMPLES,DISPLAY_TIME); // show number of samples on the display
+  display_value(NUM_SAMPLES,DISPLAY_TIME,NOBLINKS); // show number of samples on the display
 
 }
 
@@ -430,26 +425,32 @@ void setup() {
 
 // main core handles UI
 void loop() {
-  bool anybuttonpressed,held;
+  bool held;
 
   static uint32_t lastbuttonstate, buttonvector;
   static int32_t buttontimer;
 
-// buttonvector holds the last button state and the current button state
+#ifdef MONITOR_MAIN_LOOP  
+  digitalWrite(CPU_USE,1); // pulse every time thru the main loop
+  delayMicroseconds(10);
+  digitalWrite(CPU_USE,0); // pulse every time thru the main loop  
+#endif
+
+// buttonvector holds the last button state and the current button state as bitmaps
 // makes it easy to detect state and change of state for any button or combination of buttons
 
   buttonvector=(lastbuttonstate << (NUM_BUTTONS)) | buttonbits();
-  if (buttonvector !=0) anybuttonpressed=true;
-  else buttontimer=millis(); // reset timer if no buttons are pressed
+  lastbuttonstate=buttonvector & 0x1ff; // save last state
 
   if (buttonvector==0) buttontimer=millis(); // reset timer if no buttons are pressed
 
-  if ((millis()-buttontimer) > CLICK_TIME) held=true;
+  if ((millis()-buttontimer) > CLICK_TIME) held=true; // short press is a click, long press is a hold
   else held=false;
 
 // UI is driven by button clicks and presses (holds) which we handle here
   switch (buttonvector) {
     case (BUTTONPRESSED(BUTSHIFT)): // a button was pressed so start timing it to see if its a click or a hold
+      display_value(1<<(7-current_track),FASTBLINK_TIME,NUMFASTBLINKS); // show the current track
     case (BUTTONPRESSED(BUT0)):
     case (BUTTONPRESSED(BUT1)):
     case (BUTTONPRESSED(BUT2)):
@@ -467,7 +468,7 @@ void loop() {
           int newbpm=map(potvalue[2],POT_MIN,POT_MAX,50,305); // precalculate possible new BPM
           if(!potlock[2] && (bpm !=newbpm)) {
             bpm=newbpm; // set BPM
-            display_value(bpm-50,DISPLAY_TIME); // show BPM Pikocore style
+            display_value(bpm-50,DISPLAY_TIME,NOBLINKS); // show BPM Pikocore style
           }
           if(!potlock[0]) { // change sample if pot has moved enough
             int16_t newsample=(int16_t) map(potvalue[0],POT_MIN,POT_MAX,0,NUM_SAMPLES-1); // precompute new sample
@@ -483,10 +484,9 @@ void loop() {
             if (seq[current_track].divider != newdivider) { 
               seq[current_track].divider = newdivider; 
               sync_sequencers();  // sync all sequencers to maintain phase relationship
-              display_value(1<<(7-divindex),DISPLAY_TIME); // show divider
+              display_value(1<<(7-divindex),DISPLAY_TIME,NOBLINKS); // show divider
             }
           }
-
       }
       break;
     case (BUTTONRELEASED(BUTSHIFT)):  // shift button was released
@@ -504,27 +504,35 @@ void loop() {
 
     case (0b100000001100000000): // shift + button to select track  
       current_track=0;
+      display_value(1<<(7-current_track),FASTBLINK_TIME,NUMFASTBLINKS); // show the current track
       break; 
     case (0b100000010100000000): // shift + button to select track  
       current_track=1;
+      display_value(1<<(7-current_track),FASTBLINK_TIME,NUMFASTBLINKS); // show the current track
       break;
     case (0b100000100100000000): // shift + button to select track  
       current_track=2;
+      display_value(1<<(7-current_track),FASTBLINK_TIME,NUMFASTBLINKS); // show the current track
       break;
     case (0b100001000100000000): // shift + button to select track  
       current_track=3;
+      display_value(1<<(7-current_track),FASTBLINK_TIME,NUMFASTBLINKS); // show the current track
       break;
     case (0b100010000100000000): // shift + button to select track  
       current_track=4;
+      display_value(1<<(7-current_track),FASTBLINK_TIME,NUMFASTBLINKS); // show the current track
       break;  
     case (0b100100000100000000): // shift + button to select track  
       current_track=5;
+      display_value(1<<(7-current_track),FASTBLINK_TIME,NUMFASTBLINKS); // show the current track
       break;  
     case (0b101000000100000000): // shift + button to select track  
       current_track=6;
+      display_value(1<<(7-current_track),FASTBLINK_TIME,NUMFASTBLINKS); // show the current track
       break;  
     case (0b110000000100000000): // shift + button to select track  
       current_track=7;
+      display_value(1<<(7-current_track),FASTBLINK_TIME,NUMFASTBLINKS); // show the current track
       break; 
     case (BUTTONDOWN(BUT0)): // button held, edit step
       if (held) {
@@ -589,9 +597,12 @@ void loop() {
       break;
     case (BUTTONRELEASED(BUT7)):  // button was released
       if (!held) toggle_step(current_track,7+FN2nd*8);  // !held means button was clicked   
-      break;    
+      break; 
+    case (BUTTONDOWN(BUT0) | BUTTONRELEASED (BUT3)): // "or" is actually "and" in this case since both states have to match
+      seq[current_track].enabled=!seq[current_track].enabled; // toggle track on and off
+    break;   
   }
-  lastbuttonstate=buttonvector & 0x1ff; // save last state
+
 
 
 // MIDI.read();  // do serial MIDI
@@ -606,7 +617,7 @@ void loop() {
   }
 
 // default display show steps for current track and sequencer step
-  if ((millis() > display_timer)) {
+  if ((millis() > display_timer) && (blinkcount <=0)) {
     bool state;
     int8_t ledindex= seq[current_track].index - FN2nd*8; // show first 8 or 2nd 8 steps based on FN2nd state
     int8_t step=0;
@@ -616,6 +627,13 @@ void loop() {
       if (step == ledindex) state=!state; // show steps - invert led on triggered steps
       digitalWrite(i,state);
       ++step;
+    }
+  }
+  else {  // handle blinking LED display 
+    if ((millis() > display_timer) && (blinkcount >=0)) {
+      if (blinkcount & 1) display_value(pattern, FASTBLINK_TIME,NOBLINKS);  // blink LEDs on
+      else display_value(0, FASTBLINK_TIME,NOBLINKS);// LEDs off
+      --blinkcount;
     }
   }
 
@@ -644,13 +662,11 @@ void loop1(){
   for (int track=0; track< NTRACKS;++track) {  // look for samples that are playing, scale their volume, and add them up
     tracksample=voice[track].sample; // precompute for a little more speed below
     index=voice[track].sampleindex>>12; // get the integer part of the sample increment
-    if (index <= sample[tracksample].samplesize) { // if sample is still playing, do interpolation   
+    if (index <= sample[tracksample].samplesize) { // if sample is playing, do interpolation   
       samp0=sample[tracksample].samplearray[index]; // get the first sample to interpolate
       samp1=sample[tracksample].samplearray[index+1];// get the second sample
       delta=samp1-samp0;
       newsample=(int32_t)samp0+((int32_t)delta*((int32_t)voice[track].sampleindex & 0x0fff))/4096; // interpolate between the two samples
-      //samplesum+=((int32_t)samp0+(int32_t)delta*(sample[i].sampleindex & 0x0fff)/4096)*sample[i].play_volume;
-      // samplesum+=(newsample*(127*voice[track].level))/1000;
       samplesum+=(newsample*voice[track].level); // changed to MIDI velocity levels 0-127
       voice[track].sampleindex+=voice[track].sampleincrement; // add step increment
     }
@@ -662,13 +678,13 @@ void loop1(){
 
 
 
-#ifdef MONITOR_CPU  
+#ifdef MONITOR_CPU1  
   digitalWrite(CPU_USE,0); // low - CPU not busy
 #endif
  // write samples to DMA buffer - this is a blocking call so it stalls when buffer is full
 	DAC.write(int16_t(samplesum)); // left
 
-#ifdef MONITOR_CPU
+#ifdef MONITOR_CPU1
   digitalWrite(CPU_USE,1); // hi = CPU busy
 #endif
 }
