@@ -1,6 +1,6 @@
 // Audio data converted from WAV file by wav2header based on wav2sketch by Paul Stoffregen
 
-// Converted from AM_BaStatB_120C.wav, using 44100 Hz, 16 bit PCM encoding
+// Converted from AM_BaStatB_120C.wav, using 44100 Hz, PCM encoding
 #define Am_bastatb_120c_SIZE 11827
 
 const int16_t Am_bastatb_120c[] = {

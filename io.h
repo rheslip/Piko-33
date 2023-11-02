@@ -31,7 +31,7 @@
 #ifndef IO_H_
 #define IO_H_
 
-#define CPU_USE 15
+#define CPU_USE 0
 #define PWMOUT 20
 
 // analog inputs for voltage control - range approx 0-5v

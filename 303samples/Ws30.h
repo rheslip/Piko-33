@@ -1,6 +1,6 @@
 // Audio data converted from WAV file by wav2header based on wav2sketch by Paul Stoffregen
 
-// Converted from WS30.wav, using 44100 Hz, 16 bit PCM encoding
+// Converted from WS30.wav, using 44100 Hz, PCM encoding
 #define Ws30_SIZE 27706
 
 const int16_t Ws30[] = {

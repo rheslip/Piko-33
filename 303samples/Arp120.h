@@ -1,6 +1,6 @@
 // Audio data converted from WAV file by wav2header based on wav2sketch by Paul Stoffregen
 
-// Converted from Arp120.wav, using 44100 Hz, 16 bit PCM encoding
+// Converted from Arp120.wav, using 44100 Hz, PCM encoding
 #define Arp120_SIZE 8796
 
 const int16_t Arp120[] = {

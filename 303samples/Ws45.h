@@ -1,6 +1,6 @@
 // Audio data converted from WAV file by wav2header based on wav2sketch by Paul Stoffregen
 
-// Converted from WS45.wav, using 44100 Hz, 16 bit PCM encoding
+// Converted from WS45.wav, using 44100 Hz, PCM encoding
 #define Ws45_SIZE 24262
 
 const int16_t Ws45[] = {

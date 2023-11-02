@@ -61,10 +61,16 @@ While holding the shift button, use the 3rd from left pot to set the BPM. BPM re
 
 Right pot is master volume - same as Pikocore.
 
+Button combinations:
+
+Hold the top left button and press the top right button to mute/unmute the current track
+
+
 Written with Arduino 2.1 with Pico Arduino RP2040 board support package installed. See https://arduino-pico.readthedocs.io/en/latest/
 
 See the tutorial video on Pikobeats (my other firmware for the Pikocore) and notes in the code for instructions on how to change the sample set. A couple of sample UF2 binaries are provided in the build directory which can be installed as per the Pikocore instructions.
 
-First version Oct 30 2023
+First released version Nov 1 2023
+
 
 
