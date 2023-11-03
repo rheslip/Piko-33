@@ -3,7 +3,7 @@
  
  Sample Sequencer for the Pikocore
 
-Demo and tutorial:
+Demo and tutorial: https://www.youtube.com/watch?v=13mzp-h5AR8
  
 Alternate firmware for the Pikocore designed by Zack Scholl https://infinitedigits.co/wares/pikocore/
 Please visit Zack's site to buy a Pikocore, a kit, or a PCB - its a really fun little sample glitcher.
@@ -37,23 +37,23 @@ While holding the USR button, use the left pot to change the sample for the curr
 
 While holding the USR button, use the 2nd from left left pot to change the clock rate for the currently selected track. Clock rates are indicated on the LEDs:
 
- top left LED on - 1/32 notes - sequencer repeats every .5 bar
+    top left LED on - 1/32 notes - sequencer repeats every .5 bar
  
- 2nd from top left LED on - 1/16 notes - default setting on power up. 16 steps of 1/16 notes = 1 bar.
+    2nd from top left LED on - 1/16 notes - default setting on power up. 16 steps of 1/16 notes = 1 bar.
  
- 3rd from top left LED on - 1/8 notes. 2 bars for 16 steps
+    3rd from top left LED on - 1/8 notes. 2 bars for 16 steps
  
- 2nd from top left LED on - 1/4 notes. 4 bars for 16 steps
+    2nd from top left LED on - 1/4 notes. 4 bars for 16 steps
  
- bottom left LED on - 1/2 notes. 8 bars for 16 steps
+    bottom left LED on - 1/2 notes. 8 bars for 16 steps
  
- 2nd from bottom left LED on - whole notes or 1 bar per step
+    2nd from bottom left LED on - whole notes or 1 bar per step
  
- 3rd from bottom left LED on - 2 bars per step
+    3rd from bottom left LED on - 2 bars per step
  
- 2nd from bottom left LED on - 4 bars per step
+    2nd from bottom left LED on - 4 bars per step
  
-So, each track is always 16 steps but the clock rate determines how long each step lasts. The sample length (and pitch) determines how long the sound for each step actually plays. If a new active step happens before the entire sample is played the sample will be retriggered from the beginning.
+Each track is always 16 steps but the clock rate determines how long each step lasts. The sample length (and pitch) determines how long the sound for each step actually plays. If a new active step happens before the entire sample is played the sample will be retriggered from the beginning.
 
 Tip: long step durations are useful for chord sequencing. Load some sustained chords samples and trigger them every bar, 2 or 4 bars. Adjust the step pitch for different chords.
 
@@ -63,7 +63,7 @@ Right pot is master volume - same as Pikocore.
 
 Button combinations:
 
-Hold the top left button and press the top right button to mute/unmute the current track
+    Hold the top left button and press the top right button to mute/unmute the current track
 
 
 Written with Arduino 2.1 with Pico Arduino RP2040 board support package installed. See https://arduino-pico.readthedocs.io/en/latest/
